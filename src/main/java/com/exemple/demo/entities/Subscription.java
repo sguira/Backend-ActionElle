@@ -33,5 +33,6 @@ public class Subscription {
     private String urlAttestation;
     private String status;
     private String dateCreated = (new Date(System.currentTimeMillis())).toString();
-    private double prime;
+
+    private Object details;
 }

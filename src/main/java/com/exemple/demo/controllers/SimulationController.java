@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -24,10 +25,9 @@ import com.exemple.demo.entities.Simulation;
 import com.exemple.demo.repositories.ProduitAssureeRepository;
 import com.exemple.demo.repositories.SimulationRepository;
 import com.exemple.demo.repositories.UtilisateurRepository;
+import com.exemple.demo.service.SimulationService;
 import com.exemple.demo.service.UserDetailsServiceCustom;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -41,6 +41,7 @@ public class SimulationController {
     private final UtilisateurRepository utilisateurRepository;
     private final UserDetailsServiceCustom userDetailsServiceCustom;
     private final JwtUtils jwtUtils;
+    private final SimulationService simulationService;
 
     @PostMapping("/simulations")
     // @Operation(summary = "Cette méthode permet de faire une simulation de dévis")
@@ -51,25 +52,20 @@ public class SimulationController {
         try {
             // System.out.println(simulate.getProduitAssure().getNomProduit());
             System.out.println("Méthode appeléé valeur venale" + simulation.getValeurVenale() + " \n\n\n");
-            // Simulation simulation = simulationRepository.save(simulate);
-            // ProduitAssure produitAssure =
-            // produitAssureRepository.findById(simulation.getProduitAssure()).get();
-            // if (simulation.getValeurNeuf() == 0) {
-            // simulation.setValeurNeuf(simulation.getValeurVenale());
-            // }
+
             String userId = getuserIdByToken(token);
             simulation.setUserId(userId);
             double primeTotal = 0;
+
+            // pour le calcul de nombre d'année ecoulée depuis la mise en circulation
             LocalDate dateFin_ = new Date(System.currentTimeMillis()).toInstant().atZone(ZoneId.systemDefault())
                     .toLocalDate();
-            LocalDate dateMiseCirculation = new Date(System.currentTimeMillis()).toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
+            LocalDate dateMiseCirculation = LocalDate.parse(simulation.getMiseCirculation());
+            long nombreAnnee = ChronoUnit.YEARS.between(dateMiseCirculation, dateFin_);
 
             Map<String, Object> result = new HashMap<>();
             Map<String, Object> details = new HashMap<>();
 
-            long nombreAnnee = ChronoUnit.YEARS.between(dateMiseCirculation, dateFin_);
             simulation.setCreatedAt((new Date(System.currentTimeMillis())).toString());
             for (Garante e : simulation.getProduitAssure().getGaranties()) {
                 if (e.getName().equals("Garantie Responsabilité Civile")) {
@@ -133,6 +129,7 @@ public class SimulationController {
             result.put("Puissance Cv", simulation.getPuissance());
             result.put("Valeur Venale", simulation.getValeurVenale());
             result.put("Détails du Calcul du prime", details);
+            result.put("quoteReference", "QT" + simulationService.generateQuote());
             simulation.setDetails(result);
             simulationRepository.save(simulation);
             return new ResponseEntity<>(result, HttpStatus.OK);
@@ -164,6 +161,16 @@ public class SimulationController {
             }
         }
         throw new Exception("Format token invalide");
+    }
+
+    // retourne une simulation à laide de son identifiant
+    @GetMapping("/simulations/{id}")
+    ResponseEntity getUnique(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(simulationRepository.findById(id).get());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
 }

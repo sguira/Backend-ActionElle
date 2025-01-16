@@ -20,7 +20,7 @@ public class Assuree {
 
 }
 
-enum TypeClient {
-    PROSPECT,
-    CLIENT
-}
+// enum TypeClient {
+// PROSPECT,
+// CLIENT
+// }
