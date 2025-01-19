@@ -7,8 +7,9 @@ Cette Action a été réalisation dans le cadre d'un test technique pour le post
 ## 2. **Description**
 Backend Action"Elle est une application Backend qui est une interface entre l'application Front <a href="https://github.com/sguira/front-action-elle.git">Action"Elle</a> et la source de donnée. Cette application mets en place l'ensemble des méthode qui permette de manipuler les données dans cette Application 
 Pour cette application nous avons deux principales utilisateurs qui sont les 
-- utilisateurs Simple (Amazone)
+- utilisateurs Simple (Amazone) 
 - Administrateur
+J'utilise la base de donnée MongoDb pour la persistance des données.
 
 ## 3. Prérequis
 - Java 11
