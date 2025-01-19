@@ -24,6 +24,8 @@ import com.exemple.demo.entities.Utilisateur;
 import com.exemple.demo.repositories.UtilisateurRepository;
 import com.exemple.demo.service.UtilisateurService;
 
+import jakarta.validation.Valid;
+// import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,7 +43,7 @@ public class AuthController {
     private final UtilisateurRepository utilisateurRepository;
 
     @PostMapping("/register")
-    ResponseEntity<?> register(@RequestBody Utilisateur utilisateur) {
+    ResponseEntity<?> register(@Valid @RequestBody Utilisateur utilisateur) {
         try {
             return new ResponseEntity<>(authService.registerUser(utilisateur), HttpStatus.OK);
         } catch (Exception e) {

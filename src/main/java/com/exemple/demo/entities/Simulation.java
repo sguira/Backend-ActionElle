@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +32,7 @@ public class Simulation {
     @NotBlank(message = "cette valeur est obligatoire")
     private String miseCirculation;
 
+    @NotNull(message = "cette valeur ne doit pas être vide")
     private double valeurVenale;
     private double valeurNeuf;
     private int puissance;

@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.exemple.demo.config.JwtUtils;
 import com.exemple.demo.entities.Utilisateur;
 import com.exemple.demo.repositories.UtilisateurRepository;
 
@@ -17,6 +18,8 @@ public class UtilisateurService {
 
     private final UtilisateurRepository utilisateurRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtils jwtUtils;
+    private final UserDetailsServiceCustom userDetailsServiceCustom;
 
     public Utilisateur registerUser(Utilisateur utilisateur) throws Exception {
 
@@ -33,6 +36,20 @@ public class UtilisateurService {
 
     public List<Utilisateur> getAllUsers() {
         return utilisateurRepository.findAll();
+    }
+
+    // une méthode qui retourne le nom d'utilsateur à partir du token
+    public String getuserIdByToken(String token) throws Exception {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+            String username = jwtUtils.extractUsername(token);
+            if (jwtUtils.validateToken(token, userDetailsServiceCustom.loadUserByUsername(username))) {
+                return utilisateurRepository.findUserByUsername(username).getId();
+            } else {
+                throw new Exception("Token non valide");
+            }
+        }
+        throw new Exception("Format token invalide");
     }
 
 }

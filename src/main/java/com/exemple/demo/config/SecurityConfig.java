@@ -51,7 +51,10 @@ public class SecurityConfig {
                 .cors(c -> c.configurationSource(configurationSource()))
                 .authorizeHttpRequests(
                         request -> request.requestMatchers("/api/v1/auths/*").permitAll()
-                                .requestMatchers("/api/v1/docs/**", "api/v1/swagger-ui/**").permitAll()
+                                .requestMatchers("/api/v1/docs/**", "api/v1/swagger-ui/**", "swagger-ui/**",
+                                        "/swagger-ui/index.html",
+                                        "/v3/api-docs/**")
+                                .permitAll()
                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/v1/simulations/*").authenticated()
                                 .anyRequest().authenticated())

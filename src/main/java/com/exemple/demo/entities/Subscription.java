@@ -1,6 +1,7 @@
 package com.exemple.demo.entities;
 
 import java.util.Date;
+import java.util.Map;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
@@ -20,12 +21,14 @@ import lombok.RequiredArgsConstructor;
 public class Subscription {
     @Id
     private String id;
+
+    private String quoteReference;
     @DBRef
     private Vehicule vehicule;
     @DBRef
     private Assuree assuree;
 
-    @NotNull
+    // @NotNull
     private String amazoneId;
 
     @DBRef
@@ -34,5 +37,5 @@ public class Subscription {
     private String status;
     private String dateCreated = (new Date(System.currentTimeMillis())).toString();
 
-    private Object details;
+    private Map<String, Object> details;
 }

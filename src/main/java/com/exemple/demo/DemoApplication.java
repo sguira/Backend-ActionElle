@@ -16,7 +16,7 @@ public class DemoApplication {
 		SpringApplication.run(DemoApplication.class, args);
 	}
 
-	// classe de type bean qui permet d'ajouter le filtre rate limiting
+	// méthode de type bean qui permet d'ajouter le filtre rate limiting
 	@Bean
 	public FilterRegistrationBean<RateLimitFilter> rateLimitingFilter() {
 		FilterRegistrationBean<RateLimitFilter> registrationBean = new FilterRegistrationBean<>();

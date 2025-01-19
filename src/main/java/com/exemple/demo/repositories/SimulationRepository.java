@@ -9,4 +9,5 @@ import com.exemple.demo.entities.Simulation;
 public interface SimulationRepository extends MongoRepository<Simulation, String> {
 
     public List<Simulation> findByUserId(String id);
+
 }

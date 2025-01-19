@@ -28,6 +28,7 @@ import com.exemple.demo.repositories.UtilisateurRepository;
 import com.exemple.demo.service.SimulationService;
 import com.exemple.demo.service.UserDetailsServiceCustom;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -47,7 +48,8 @@ public class SimulationController {
     // @Operation(summary = "Cette méthode permet de faire une simulation de dévis")
     // @ApiResponse(responseCode = "200", description = "retourne la simulation du
     // dévis qui contient des informations comme le montant total de prime")
-    ResponseEntity<?> createSimulation(@RequestBody Simulation simulation, @RequestHeader("Authorization") String token)
+    ResponseEntity<?> createSimulation(@Valid @RequestBody Simulation simulation,
+            @RequestHeader("Authorization") String token)
             throws Exception {
         try {
             // System.out.println(simulate.getProduitAssure().getNomProduit());
@@ -69,7 +71,7 @@ public class SimulationController {
             simulation.setCreatedAt((new Date(System.currentTimeMillis())).toString());
             for (Garante e : simulation.getProduitAssure().getGaranties()) {
                 if (e.getName().equals("Garantie Responsabilité Civile")) {
-                    double rcPrime = simulation.getPuissance() == 2 ? 37601
+                    double rcPrime = (simulation.getPuissance() == 2) ? 37601
                             : simulation.getPuissance() >= 3 && simulation.getPuissance() <= 6 ? 45181
                                     : simulation.getPuissance() >= 7 && simulation.getPuissance() <= 10 ? 51078
                                             : simulation.getPuissance() >= 11

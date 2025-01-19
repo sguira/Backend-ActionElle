@@ -1,15 +1,19 @@
 package com.exemple.demo.controllers;
 
+import java.net.http.HttpHeaders;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -37,13 +41,15 @@ import com.exemple.demo.repositories.SubscriptionRepository;
 import com.exemple.demo.repositories.UtilisateurRepository;
 import com.exemple.demo.repositories.VehiculeRepository;
 import com.exemple.demo.service.UserDetailsServiceCustom;
+import com.exemple.demo.service.pdfMakerService;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @CrossOrigin("*")
 @RequiredArgsConstructor
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/subscriptions")
 public class SousCriptionController {
 
     private final SubscriptionRepository subscriptionRepository;
@@ -53,11 +59,18 @@ public class SousCriptionController {
     private final UtilisateurRepository utilisateurRepository;
     private final UserDetailsServiceCustom userDetailsServiceCustom;
     private final ProduitAssureeRepository produitAssureeRepository;
+    private final pdfMakerService pdfService;
     // private final AssureeRepository
 
+    // génération du code de 12 caractères
+    public String generateQuote() {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    }
+
     // méthode qui permet de faire une souscription
-    @PostMapping("/souscriptions")
+    @PostMapping("")
     @Transactional
+    @Operation(description = "Cette méthode permet de faire une souscription à un produit d'assurance pour un client donné")
     public ResponseEntity<?> createSubscription(@RequestBody Subscription subscription,
             @RequestHeader("Authorization") String token) {
 
@@ -76,7 +89,7 @@ public class SousCriptionController {
                 // Assuree assuree = subscription.getAssuree();
                 subscription.setAmazoneId(amazoneId);
                 subscription.setVehicule(vehiculeRepository.save(vehicule));
-
+                subscription.setQuoteReference(generateQuote());
                 // enregistrement de l'assuré
                 subscription.setAssuree(assureeRepository.save(subscription.getAssuree()));
 
@@ -85,7 +98,7 @@ public class SousCriptionController {
                 ProduitAssure produit = produitAssureeRepository.findById(subscription.getProduitAssure().getId())
                         .get();
                 System.out.print("Id Produit :" + produit.getId());
-                Map<String, ?> detailsCalcul = calculerPrime(subscription, produit);
+                Map<String, Object> detailsCalcul = calculerPrime(subscription, produit);
                 System.out.print("Details:\n");
                 System.out.println(detailsCalcul + "\n\n\n");
 
@@ -105,7 +118,7 @@ public class SousCriptionController {
 
     }
 
-    // pour calculer le prime à payer
+    // méthode pour calculer le prime à payer
     Map<String, Object> calculerPrime(Subscription subscription, ProduitAssure produitAssure) {
 
         Map<String, Object> result = new HashMap<>();
@@ -185,7 +198,7 @@ public class SousCriptionController {
 
     }
 
-    // une méthode qui retourne le l'identifiant d'utilsateur à partir du token
+    // une méthode qui retourne l'identifiant d'utilsateur à partir du token
     String getuserIdByToken(String token) throws Exception {
         if (token.startsWith("Bearer ")) {
             token = token.substring(7);
@@ -200,7 +213,7 @@ public class SousCriptionController {
     }
 
     // retourne la liste de toutes les souscription par Utilisateur
-    @GetMapping("/souscriptions")
+    @GetMapping("")
     public ResponseEntity<?> getAllSubscriptionByUser(@RequestHeader("Authorization") String token) {
         // System.out.println("Appelé\n\n");
         try {
@@ -212,7 +225,7 @@ public class SousCriptionController {
     }
 
     // retourne une seule souscription à partir de son identifiant
-    @GetMapping("/souscriptions/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<?> getSingleSouscription(@PathVariable String id) {
         try {
             return ResponseEntity.ok(subscriptionRepository.findById(id).get());
@@ -221,18 +234,53 @@ public class SousCriptionController {
         }
     }
 
-    // changer le status d'un assuré
-    @PutMapping("/souscriptions/statusAssuree/{id}")
-    public ResponseEntity<?> changeStatusSouscription(@PathVariable String id) {
-        System.out.println("Métode appelée \n\n");
+    // Géneration de l'attestation
+    @GetMapping("/{id}/attestation")
+    public ResponseEntity<byte[]> getAttestation(@PathVariable String id) {
         try {
-            Assuree assuree = assureeRepository.findById(id).get();
-            assuree.setType(TypeClient.PROSPECT);// change le status de l'assuré
-            return ResponseEntity.ok(assureeRepository.save(assuree));
+            Subscription subscription = subscriptionRepository.findById(id).get();
+            byte[] attestation = pdfService.generatePdfSouscription(subscription);
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=rapport.pdf")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(attestation);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
+    }
 
+    // changer le status d'un assuré
+    @PatchMapping("/statusAssuree/{id}")
+    public ResponseEntity<?> changeStatusSouscription(@PathVariable String id) {
+
+        try {
+            Assuree assuree = assureeRepository.findById(id).get();
+            assuree.setType(TypeClient.CLIENT);// change le status de l'assuré
+            return ResponseEntity.ok(assureeRepository.save(assuree));
+        } catch (Exception e) {
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+    }
+
+    // liste des souscriptions pour un client donnée
+    @GetMapping("/clients/{id}")
+    ResponseEntity<Object> getSouscriptionByCustom(@PathVariable String id) {
+        try {
+            List<Subscription> subscriptions = new ArrayList<>();
+
+            for (Subscription s : subscriptionRepository.findAll()) {
+                if (s.getAssuree().getId().equals(id)) {
+                    subscriptions.add(s);
+                }
+            }
+            return ResponseEntity.ok(subscriptions);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erreur interne du server");
+        }
     }
 
 }
